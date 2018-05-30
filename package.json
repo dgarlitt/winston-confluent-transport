@@ -1,0 +1,32 @@
+{
+  "name": "winston-confluent-transport",
+  "version": "1.0.0",
+  "description": "A Winston logger transport for the Confluent REST API for Apache Kafka.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/dgarlitt/winston-confluent-transport.git"
+  },
+  "keywords": [
+    "winston",
+    "kafka",
+    "confluent",
+    "REST",
+    "API",
+    "log",
+    "transport"
+  ],
+  "author": "Daniel Arlitt <dgarlitt@yahoo.com>",
+  "license": "The MIT License (MIT)",
+  "bugs": {
+    "url": "https://github.com/dgarlitt/winston-confluent-transport/issues"
+  },
+  "homepage": "https://github.com/dgarlitt/winston-confluent-transport#readme",
+  "dependencies": {
+    "kafka-rest": "0.0.5",
+    "winston-transport": "^4.0.0"
+  }
+}
