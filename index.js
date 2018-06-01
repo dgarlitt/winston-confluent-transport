@@ -52,29 +52,37 @@ module.exports = class ConfluentTransport extends Transport {
   }
 
   flushQueue() {
-    return new Promise((resolve, reject) => {
-      if (!this._pending && this._queue.length) {
-        this._pending = true;
-        const numToSend = this._queue.length;
-        const messages = this._queue.slice(0, numToSend);
-        this._send(messages)
-        .then(() => {
-          this._queue.splice(0, numToSend);
-          this._pending = false;
-          resolve(numToSend);
-        })
-        .catch((err) => {
-          this._pending = false;
-          reject(err);
-        });
-      } else {
-        resolve(0);
-      }
-    });
+    if (!this._pending && this._queue.length) {
+      this._pending = true;
+      const numToSend = this._queue.length;
+      const messages = this._queue.slice(0, numToSend);
+      this._send(messages)
+      .then(() => {
+        this._queue.splice(0, numToSend);
+        this._pending = false;
+      })
+      .catch((err) => {
+        this._pending = false;
+      });
+    }
   }
 
   _send(messages) {
     this.emit('sending', messages);
+    return new Promise((resolve, reject) => {
+      this._request(messages)
+      .then((res) => {
+        this.emit('success', res);
+        resolve(res);
+      })
+      .catch(err => {
+        this.emit('error', err);
+        reject(err);
+      });
+    });
+  }
+
+  _request(messages) {
     return new Promise((resolve, reject) => {
       this._kafka.topic(this._topic).produce(messages, (err, res) => {
         if (err) {
@@ -85,6 +93,6 @@ module.exports = class ConfluentTransport extends Transport {
           resolve(res);
         }
       });
-    });
+    })
   }
 };
