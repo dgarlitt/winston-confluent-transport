@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/dgarlitt/winston-confluent-transport#readme",
   "dependencies": {
-    "kafka-rest": "0.0.5",
+    "request": "^2.87.0",
     "winston-transport": "^4.0.0"
   }
 }

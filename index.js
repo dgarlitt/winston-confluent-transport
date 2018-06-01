@@ -1,4 +1,4 @@
-const KafkaRest = require('kafka-rest');
+const request = require('request');
 const Transport = require('winston-transport');
 
 module.exports = class ConfluentTransport extends Transport {
@@ -7,6 +7,7 @@ module.exports = class ConfluentTransport extends Transport {
     opts.flushStrategy = (opts.flushStrategy || '').toLowerCase();
     this.name = opts.name || 'ConfluentTransport';
     this.level = opts.level || 'info';
+    this._baseUrl = opts.baseUrl;
     this._topic = opts.topic;
     this._interval = opts.interval || 1000;
     this._queue = [];
@@ -26,23 +27,20 @@ module.exports = class ConfluentTransport extends Transport {
         this._strategy.immediate = true;
     }
 
-    this._kafka = new KafkaRest({
-      url: opts.url
-    });
-
     if (this._strategy.interval) {
       this._startInterval();
     }
   }
 
   log(info, callback) {
-    const message = JSON.stringify(info);
     if (this._strategy.immediate) {
-      this._send(message);
+      this._send([info])
+      .then(() => callback())
+      .catch(callback);
     } else {
-      this._queue.push(message);
+      this._queue.push(info);
+      callback();
     }
-    callback();
   }
 
   _startInterval() {
@@ -61,7 +59,7 @@ module.exports = class ConfluentTransport extends Transport {
         this._queue.splice(0, numToSend);
         this._pending = false;
       })
-      .catch((err) => {
+      .catch(() => {
         this._pending = false;
       });
     }
@@ -83,16 +81,25 @@ module.exports = class ConfluentTransport extends Transport {
   }
 
   _request(messages) {
+    const content = { records: [] };
+    messages.forEach(msg => {
+      content.records[content.records.length] = { value: msg };
+    });
     return new Promise((resolve, reject) => {
-      this._kafka.topic(this._topic).produce(messages, (err, res) => {
-        if (err) {
-          this.emit('error', err, messages);
+      const url = `${this._baseUrl.trim()}/topics/${this._topic.trim()}`;
+      request(url, {
+        body: JSON.stringify(content),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/vnd.kafka.json.v2+json'
+        }
+      }, (err, res) => {
+        if (!!err || res.statusCode < 200 || res.statusCode >= 300) {
           reject(err);
         } else {
-          this.emit('success', res);
           resolve(res);
         }
       });
-    })
+    });
   }
 };
