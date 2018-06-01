@@ -52,20 +52,25 @@ module.exports = class ConfluentTransport extends Transport {
   }
 
   flushQueue() {
-    this.emit('invoked_sendLogs');
-    if (!this._pending && this._queue.length) {
-      this._pending = true;
-      const numToSend = this._queue.length;
-      const messages = this._queue.slice(0, numToSend);
-      this._send(messages)
+    return new Promise((resolve, reject) => {
+      if (!this._pending && this._queue.length) {
+        this._pending = true;
+        const numToSend = this._queue.length;
+        const messages = this._queue.slice(0, numToSend);
+        this._send(messages)
         .then(() => {
           this._queue.splice(0, numToSend);
           this._pending = false;
+          resolve(numToSend);
         })
-        .catch(() => {
+        .catch((err) => {
           this._pending = false;
+          reject(err);
         });
-    }
+      } else {
+        resolve(0);
+      }
+    });
   }
 
   _send(messages) {
